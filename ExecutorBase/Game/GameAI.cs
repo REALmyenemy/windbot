@@ -730,6 +730,12 @@ namespace WindBot.Game
             return selected;
         }
 
+        
+        public void OnMove(int cardId, int previousControler, int previousLocation, int currentControler, int currentLocation)
+        {
+            Executor.OnMove(cardId, previousControler, previousLocation, currentControler, currentLocation);
+        }
+
         /// <summary>
         /// Called when the AI has to select yes or no.
         /// </summary>

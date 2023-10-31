@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using WindBot.Game.AI.Enums;
 using YGOSharp.OCGWrapper.Enums;
 
@@ -77,6 +77,22 @@ namespace WindBot.Game.AI
         public static bool IsFusionSpell(this ClientCard card)
         {
             return Enum.IsDefined(typeof(FusionSpell), card.Id);
+        }
+
+        /// <summary>
+        /// Is this monster not be synchro material?
+        /// </summary>
+        public static bool IsMonsterNotBeSynchroMaterial(this ClientCard card)
+        {
+            return Enum.IsDefined(typeof(NotBeSynchroMaterialMonster), card.Id);
+        }
+
+        /// <summary>
+        /// Is this monster not be xyz material?
+        /// </summary>
+        public static bool IsMonsterNotBeXyzMaterial(this ClientCard card)
+        {
+            return Enum.IsDefined(typeof(NotBeXyzMaterialMonster), card.Id);
         }
     }
 }

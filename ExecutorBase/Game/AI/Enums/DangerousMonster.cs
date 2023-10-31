@@ -6,6 +6,7 @@
     public enum DangerousMonster
     {
         LionHeart = 54366836,
+        GrandNeoSpacianMole = 80344569,
         Yubel = 78371393,
         YubelIncarnate = 4779091,
         YubelNightmare = 31764700,
@@ -24,6 +25,10 @@
         ZushintheSleepingGiant = 67547370,
         Heart_eartHDragon = 97403510,
         DaigustoSphreeze = 29552709,
+        OhimetheManifestedMikanko = 81260679,
+        ArahimetheManifestedMikanko = 75771170,
+        HaReSwordMikanko = 18377261,
+        NiNiMirrorMikanko = 54862960,
+        FuRiJewelMikanko = 6327734
     }
 }
-

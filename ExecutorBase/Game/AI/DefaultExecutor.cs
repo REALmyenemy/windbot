@@ -1,7 +1,10 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using YGOSharp.OCGWrapper.Enums;
+using WindBot;
+using WindBot.Game;
+using WindBot.Game.AI;
 
 namespace WindBot.Game.AI
 {
@@ -104,6 +107,7 @@ namespace WindBot.Game.AI
             public const int MacroCosmos = 30241314;
             public const int UpstartGoblin = 70368879;
             public const int CyberEmergency = 60600126;
+            public const int TheAgentOfCreationVenus = 64734921;
 
             public const int EaterOfMillions = 63845230;
 
@@ -117,12 +121,25 @@ namespace WindBot.Game.AI
             public const int RoyalDecreel = 51452091;
             public const int NaturiaBeast = 33198837;
             public const int AntiSpellFragrance = 58921041;
+            
+            public const int VaylantzWorld_ShinraBansho = 49568943;
+            public const int VaylantzWorld_KonigWissen = 75952542;
+            public const int DivineArsenalAAZEUS_SkyThunder = 90448279;
+
+            public const int RescueACEHydrant = 37617348;
+        }
+
+        protected class _Setcode
+        {
+            public const int RescueACE = 0x18b;
         }
 
         protected DefaultExecutor(GameAI ai, Duel duel)
             : base(ai, duel)
         {
             AddExecutor(ExecutorType.Activate, _CardId.ChickenGame, DefaultChickenGame);
+            AddExecutor(ExecutorType.Activate, _CardId.VaylantzWorld_ShinraBansho, DefaultVaylantzWorld_ShinraBansho);
+            AddExecutor(ExecutorType.Activate, _CardId.VaylantzWorld_KonigWissen, DefaultVaylantzWorld_KonigWissen);
             AddExecutor(ExecutorType.Activate, _CardId.SantaClaws);
         }
 
@@ -168,7 +185,7 @@ namespace WindBot.Game.AI
                 if (defender.IsMonsterDangerous())
                 {
                     bool canIgnoreIt = !attacker.IsDisabled() && (
-                        attacker.IsCode(_CardId.UltimateConductorTytanno) && defender.IsDefense() ||
+                        attacker.IsCode(_CardId.UltimateConductorTytanno) && defender.IsDefense() || 
                         attacker.IsCode(_CardId.ElShaddollConstruct) && defender.IsSpecialSummoned ||
                         attacker.IsCode(_CardId.AllyOfJusticeCatastor) && !defender.HasAttribute(CardAttribute.Dark));
                     if (!canIgnoreIt)
@@ -231,7 +248,7 @@ namespace WindBot.Game.AI
             if (Enemy.HasInMonstersZone(_CardId.DupeFrog, true) && !(defender).IsCode(_CardId.DupeFrog))
                 return false;
 
-            if (Enemy.HasInMonstersZone(_CardId.MaraudingCaptain, true) && !defender.IsCode(_CardId.MaraudingCaptain) && defender.Race == (ulong)CardRace.Warrior)
+            if (Enemy.HasInMonstersZone(_CardId.MaraudingCaptain, true) && !defender.IsCode(_CardId.MaraudingCaptain) && defender.Race == (int)CardRace.Warrior)
                 return false;
 
             if (defender.IsCode(_CardId.UltimayaTzolkin) && !defender.IsDisabled() && Enemy.GetMonsters().Any(monster => !monster.Equals(defender) && monster.HasType(CardType.Synchro)))
@@ -241,6 +258,9 @@ namespace WindBot.Game.AI
                 return false;
 
             if (defender.OwnTargets.Any(card => card.IsCode(_CardId.PhantomKnightsFogBlade) && !card.IsDisabled()))
+                return false;
+            
+            if (defender.IsCode(_CardId.RescueACEHydrant) && !defender.IsDisabled() && Enemy.GetMonsters().Any(monster => monster.HasSetcode(_Setcode.RescueACE) && !monster.IsCode(_CardId.RescueACEHydrant)))
                 return false;
 
             return true;
@@ -307,6 +327,40 @@ namespace WindBot.Game.AI
         public override bool OnSelectMonsterSummonOrSet(ClientCard card)
         {
             return card.Level <= 4 && Bot.GetMonsters().Count(m => m.IsFaceup()) == 0 && Util.IsAllEnemyBetterThanValue(card.Attack, true);
+        }
+
+        /// <summary>
+        /// Called when the AI has to select one or more cards.
+        /// </summary>
+        /// <param name="cards">List of available cards.</param>
+        /// <param name="min">Minimal quantity.</param>
+        /// <param name="max">Maximal quantity.</param>
+        /// <param name="hint">The hint message of the select.</param>
+        /// <param name="cancelable">True if you can return an empty list.</param>
+        /// <returns>A new list containing the selected cards.</returns>
+        public override IList<ClientCard> OnSelectCard(IList<ClientCard> cards, int min, int max, int hint, bool cancelable)
+        {
+            // wordaround for Dogmatika Alba Zoa
+            int albaZoaCount = Bot.ExtraDeck.Count / 2;
+            if (!cancelable && min == albaZoaCount && max == albaZoaCount
+                && Duel.Player == 1 && (Duel.Phase == DuelPhase.Main1 || Duel.Phase == DuelPhase.Main2) && cards.All(card =>
+                card.Controller == 0 && (card.Location == CardLocation.Hand || card.Location == CardLocation.Extra)))
+            {
+                Logger.DebugWriteLine("Dogmatika Alba Zoa solved");
+                List<ClientCard> extraDeck = new List<ClientCard>(Bot.ExtraDeck);
+                int shuffleCount = extraDeck.Count;
+                while (shuffleCount-- > 1)
+                {
+                    int index = Program.Rand.Next(extraDeck.Count);
+                    ClientCard tempCard = extraDeck[shuffleCount];
+                    extraDeck[shuffleCount] = extraDeck[index];
+                    extraDeck[index] = tempCard;
+                }
+                
+                return Util.CheckSelectCount(extraDeck, cards, min, max);
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -467,7 +521,8 @@ namespace WindBot.Game.AI
             int[] ignoreList = {
                 _CardId.MacroCosmos,
                 _CardId.UpstartGoblin,
-                _CardId.CyberEmergency
+                _CardId.CyberEmergency,
+                _CardId.TheAgentOfCreationVenus
             };
             if (Util.GetLastChainCard().IsCode(ignoreList))
                 return false;
@@ -788,16 +843,17 @@ namespace WindBot.Game.AI
                 _CardId.BlackRoseDragon,
                 _CardId.JudgmentDragon,
                 _CardId.TopologicTrisbaena,
-                _CardId.EvenlyMatched
+                _CardId.EvenlyMatched,
+                _CardId.DivineArsenalAAZEUS_SkyThunder
             };
-            int[] destroyAllOpponentList =
+            int[] destroyAllOpponentSpellList =
             {
                 _CardId.HarpiesFeatherDuster,
                 _CardId.DarkMagicAttack
             };
 
             if (Util.ChainContainsCard(destroyAllList)) return true;
-            if (Enemy.HasInSpellZone(destroyAllOpponentList, true)) return true;
+            if (Enemy.HasInSpellZone(destroyAllOpponentSpellList, true) && Card.Location == CardLocation.SpellZone) return true;
             // TODO: ChainContainsCard(id, player)
             return false;
         }
@@ -1176,6 +1232,56 @@ namespace WindBot.Game.AI
             }
 
             return Util.IsTurn1OrMain2();
+        }
+
+        /// <summary>
+        /// Always activate
+        /// </summary>
+        protected bool DefaultVaylantzWorld_ShinraBansho()
+        {
+            if (DefaultSpellWillBeNegated()) {
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Select enemy's best monster
+        /// </summary>
+        protected bool DefaultVaylantzWorld_KonigWissen()
+        {
+            if (DefaultSpellWillBeNegated()) {
+                return false;
+            }
+
+            List<ClientCard> monsters = Enemy.GetMonsters();
+            if (monsters.Count == 0) {
+                return false;
+            }
+
+            List<ClientCard> targetList = new List<ClientCard>();
+            List<ClientCard> floodgateCards = monsters
+                .Where(card => card?.Data != null && card.IsFloodgate() && card.IsFaceup() && !card.IsShouldNotBeTarget())
+                .OrderBy(card => card.Attack).ToList();
+            List<ClientCard> dangerousCards = monsters
+                .Where(card => card?.Data != null && card.IsMonsterDangerous() && card.IsFaceup() && !card.IsShouldNotBeTarget())
+                .OrderBy(card => card.Attack).ToList();
+            List<ClientCard> attackOrderedCards = monsters
+                .Where(card => card?.Data != null && card.HasType(CardType.Monster) && card.IsFaceup() && card.IsShouldNotBeTarget())
+                .OrderBy(card => card.Attack).ToList();
+
+            targetList.AddRange(floodgateCards);
+            targetList.AddRange(dangerousCards);
+            targetList.AddRange(attackOrderedCards);
+
+            if (targetList?.Count > 0)
+            {
+                AI.SelectCard(targetList);
+                return true;
+            }
+
+            return false;
         }
     }
 }

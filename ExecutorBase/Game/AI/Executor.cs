@@ -21,13 +21,12 @@ namespace WindBot.Game.AI
 
         protected ExecutorType Type { get; private set; }
         protected ClientCard Card { get; private set; }
-        protected long ActivateDescription { get; private set; }
+        protected int ActivateDescription { get; private set; }
+        protected int CurrentTiming { get; private set; }
 
         protected ClientField Bot { get; private set; }
         protected ClientField Enemy { get; private set; }
-
         public Random Rand;
-
         protected Executor(GameAI ai, Duel duel)
         {
             Rand = new Random();
@@ -42,12 +41,12 @@ namespace WindBot.Game.AI
 
         public virtual int OnRockPaperScissors()
         {
-            return Rand.Next(1, 4);
+            return Program.Rand.Next(1, 4);
         }
 
         public virtual bool OnSelectHand()
         {
-            return Rand.Next(2) > 0;
+            return Program.Rand.Next(2) > 0;
         }
 
         /// <summary>
@@ -114,14 +113,20 @@ namespace WindBot.Game.AI
         {
             // Some AI need do something on draw
         }
+                public virtual IList<ClientCard> OnSelectCard(IList<ClientCard> cards, int min, int max, long hint, bool cancelable)
 
-        public virtual IList<ClientCard> OnSelectCard(IList<ClientCard> cards, int min, int max, long hint, bool cancelable)
+        public virtual void OnMove(int cardId, int previousControler, int previousLocation, int currentControler, int currentLocation)
+        {
+            // Some AI need do something on card's moving
+        }
+
+        public virtual IList<ClientCard> OnSelectCard(IList<ClientCard> cards, int min, int max, int hint, bool cancelable)
         {
             // For overriding
             return null;
         }
 
-        public virtual IList<ClientCard> OnSelectSum(IList<ClientCard> cards, int sum, int min, int max, long hint, bool mode)
+        public virtual IList<ClientCard> OnSelectSum(IList<ClientCard> cards, int sum, int min, int max, int hint, bool mode)
         {
             // For overriding
             return null;
@@ -174,17 +179,17 @@ namespace WindBot.Game.AI
             return;
         }
 
-        public virtual bool OnSelectYesNo(long desc)
+        public virtual bool OnSelectYesNo(int desc)
         {
             return true;
         }
 
-        public virtual int OnSelectOption(IList<long> options)
+        public virtual int OnSelectOption(IList<int> options)
         {
             return -1;
         }
 
-        public virtual int OnSelectPlace(long cardId, int player, CardLocation location, int available)
+        public virtual int OnSelectPlace(int cardId, int player, CardLocation location, int available)
         {
             // For overriding
             return 0;
@@ -236,11 +241,12 @@ namespace WindBot.Game.AI
         /// <summary>
         /// Set global variables Type, Card, ActivateDescription for Executor
         /// </summary>
-        public void SetCard(ExecutorType type, ClientCard card, long description)
+        public void SetCard(ExecutorType type, ClientCard card, int description, int timing = -1)
         {
             Type = type;
             Card = card;
             ActivateDescription = description;
+            CurrentTiming = timing;
         }
 
         /// <summary>
